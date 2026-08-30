@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Shuffle the OST pool in the background for videos / work.
+# Usage:
+#   ./play-ost              # 16bit + club (no Emerald Trail)
+#   ./play-ost 16bit
+#   ./play-ost club
+#   ./play-ost bright
+#   ./play-ost refresh      # rebuild pool symlinks + m3u playlists
+#   OST_VOLUME=35 ./play-ost 16bit
+set -euo pipefail
+
+ROOT="${OST_DIR:-$HOME/Music/ost}"
+POOL="${1:-pool}"
+
+refresh_playlists() {
+  mkdir -p "$ROOT/pool" "$ROOT/playlists" "$ROOT/16bit" "$ROOT/club" "$ROOT/bright"
+  find "$ROOT/pool" -maxdepth 1 -type l -delete
+  shopt -s nullglob
+  local f
+  for f in "$ROOT/16bit"/*.mp3; do
+    ln -sfn "../16bit/$(basename "$f")" "$ROOT/pool/$(basename "$f")"
+  done
+  for f in "$ROOT/club"/*.mp3; do
+    ln -sfn "../club/$(basename "$f")" "$ROOT/pool/$(basename "$f")"
+  done
+  write_m3u() {
+    local dir="$1" out="$2"
+    {
+      echo "#EXTM3U"
+      local p base
+      for p in "$dir"/*.mp3; do
+        [[ -e "$p" ]] || continue
+        base="$(basename "$p" .mp3)"
+        echo "#EXTINF:120,$base"
+        echo "$p"
+      done
+    } > "$out"
+  }
+  write_m3u "$ROOT/16bit" "$ROOT/playlists/16bit.m3u"
+  write_m3u "$ROOT/club" "$ROOT/playlists/club.m3u"
+  {
+    echo "#EXTM3U"
+    echo "# 16bit + club (video pool)"
+    local p
+    for p in "$ROOT/16bit"/*.mp3 "$ROOT/club"/*.mp3; do
+      [[ -e "$p" ]] || continue
+      echo "#EXTINF:120,$(basename "$p" .mp3)"
+      echo "$p"
+    done
+  } > "$ROOT/playlists/video-bg.m3u"
+  shopt -u nullglob
+  echo "refreshed $ROOT/playlists and $ROOT/pool"
+  ls "$ROOT/16bit"/*.mp3 "$ROOT/club"/*.mp3 2>/dev/null | wc -l | awk '{print $1 " tracks in video pool"}'
+}
+
+if [[ "$POOL" == "refresh" ]]; then
+  refresh_playlists
+  exit 0
+fi
+
+case "$POOL" in
+  pool)   TARGETS=("$ROOT/16bit" "$ROOT/club") ;;
+  16bit)  TARGETS=("$ROOT/16bit") ;;
+  club)   TARGETS=("$ROOT/club") ;;
+  bright) TARGETS=("$ROOT/bright") ;;
+  *)
+    echo "Unknown pool: $POOL" >&2
+    echo "Pools: pool  16bit  club  bright  refresh" >&2
+    exit 1
+    ;;
+esac
+
+for d in "${TARGETS[@]}"; do
+  if [[ ! -d "$d" ]]; then
+    echo "Missing directory: $d" >&2
+    exit 1
+  fi
+done
+
+exec mpv \
+  --no-video \
+  --force-window=no \
+  --shuffle \
+  --loop-playlist=inf \
+  --volume="${OST_VOLUME:-45}" \
+  --audio-display=no \
+  --gapless-audio=weak \
+  --audio-client-name="ost-$POOL" \
+  --osd-playing-msg='${filename}' \
+  "${TARGETS[@]}"
