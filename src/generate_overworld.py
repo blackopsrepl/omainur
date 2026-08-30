@@ -186,7 +186,7 @@ def main() -> None:
             L[i] += bell * 0.6
             R[i] += bell
 
-    write_wav(track_path("bright", "emerald_trail_2min.mp3"), L, R, crunch=0.0)
+    write_wav(track_path("16bit", "emerald_trail_2min.mp3"), L, R, crunch=0.0)
 
 
 if __name__ == "__main__":

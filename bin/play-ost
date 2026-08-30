@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Shuffle the OST pool in the background for videos / work.
 # Usage:
-#   ./play-ost              # 16bit + club (no Emerald Trail)
+#   ./play-ost              # 16bit + club
 #   ./play-ost 16bit
 #   ./play-ost club
 #   ./play-ost bright

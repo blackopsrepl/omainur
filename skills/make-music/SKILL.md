@@ -14,22 +14,12 @@ Original tracks for Tim's video-background OST. Synthesize in Python, bounce MP3
 ## Before writing a note
 
 1. `ls ~/Music/ost/16bit ~/Music/ost/club ~/Music/ost/bright ~/Music/ost/experiments` — do not clone a pool track.
-2. Default lane is **16-bit SNES/Genesis** (the cues Tim keeps: Gator, Red Alert, Thorn Chapel, Neon Riot, Last Bell, Night Raid). Variety = a *different 90s/early-2000s VGM progression*, key, and tempo — not a new genre.
+2. Open two existing generators and steal *methods*, not the mix. Keepers: `generate_16bit.py` (Gator), `generate_boss.py` (Red Alert), `generate_castlevania.py` (Thorn Chapel), `generate_clock_tower.py` (Last Bell), `generate_night_city.py` (Neon Riot), `generate_infiltration.py` (Night Raid). Later full cues in `src/` are fair too.
+3. Default lane is **16-bit SNES/Genesis**. Stay in that era. Variety is a new cue with its own intro, groove, lead, and form — not a new progression dropped into the same engine.
 
-Palette: 4/4; pulse lead + dotted-8th delay; triangle/sub bass; power fifths (no third); rock/military drums (kick on 1+3, snare 2+4, 8th hats, tom fill every 8 bars). Optional brass stabs and a triangle counter-line on the reprise.
+Taste: in-tune, slightly gritty. Default lane is dark. Raw major-key overworld is in the pool (Emerald Trail) — that color is allowed; do not clone the cue. Unison detune ≤7 cents.
 
-Taste: dark, in-tune, slightly gritty. Cute major-key overworld is a miss (Emerald Trail). Chord tones + chosen scale only. No `i → bII`. G# / C# / D# only on the chord that contains them. Unison detune ≤7 cents.
-
-Progressions to rotate (do not reuse one that is already the hook of a pool track):
-- `i–VI–VII–i` (Am F G Am) — 90s battle loop
-- `i–VI–III–VII` (Am F C G) — used (Neon Drop)
-- `i–bVII–bVI–V` Andalusian — used (Neon Riot / Chrome Cellar)
-- `i–iv–bVI–V` — used (Thorn Chapel)
-- `i–bVI–V` / `i–i–bVI–V` — used (Red Alert)
-- `i–iv–bVII–bIII` (Dm Gm C F) — falling fifths / dungeon
-- `i–bVI–bIII–bVII` (Em C G D) — SNES final-dungeon epic
-- `IV–V–iii–vi` (F G Em Am) — 90s royal road / J-RPG
-- `i–III–VII–iv` (Am C G Dm)
+**Harmony:** Any Western progression that belongs in 80s–early-2000s VGM is fair game — diatonic major/minor, modal (dorian, mixolydian, …), harmonic-minor V / vii°, circle-of-fifths, royal road, Andalusian, rock bVII, and other loops those scores actually used. Pick a tonic and a scale for the cue; melody and bass are chord tones or tones of that scale. Accidentals (G# / C# / D# and enharmonics) only on a chord that contains them. No `i → bII` as the hook. Do not copy another pool track’s loop as this cue’s hook — read existing `generate_*.py` files to see what is already taken. The pool is not a menu of allowed progressions.
 
 Keep jungle, 6/8 shrine, yo-scale, western gallop, breakbeat, and acid-house in `experiments/` unless Tim asks for that lane.
 
@@ -41,7 +31,7 @@ Repo is `~/make-music` (this skill lives at `skills/make-music/` inside it). MP3
 
 | Path | Role |
 |---|---|
-| `~/make-music/src/` | `game_synth.py`, `vgm16.py`, `paths.py`, `generate_*.py` |
+| `~/make-music/src/` | `game_synth.py`, `paths.py`, per-track `generate_*.py` |
 | `~/make-music/bin/play-ost` | Shuffle player + playlist refresh (`~/play-ost` is a symlink) |
 | `~/Music/ost/16bit/` | Canonical 16-bit / game cues |
 | `~/Music/ost/club/` | EDM / house |
@@ -52,7 +42,19 @@ Repo is `~/make-music` (this skill lives at `skills/make-music/` inside it). MP3
 
 ## Compose
 
-New file `~/make-music/src/generate_<slug>.py`. Import `game_synth` / `vgm16` / `paths` from the same folder. Bounce with `track_path("16bit", "name_2min.mp3")` (or `club` / `bright` / `experiments`). Keep pitch locked (`midi_hz`, phase accumulators). Pre-render drums; synthesize tonal layers per sample.
+New file `~/make-music/src/generate_<slug>.py` is a **full arrangement**, on the order of the keepers (not a 40-line melody list). Import `game_synth` and `paths` only. Bounce with `track_path("16bit", "name_2min.mp3")` (or `club` / `bright` / `experiments`). Keep pitch locked (`midi_hz`, phase accumulators). Pre-render drums; synthesize tonal layers per sample.
+
+Each cue must invent all of:
+
+- **Intro** — a signature that is not "4 bars of kick on 1+3". Bells, snare roll, codec blip, organ nave, alarm, wind, toms-only ritual, brass fanfare, clave+bass, horn cry, etc.
+- **Drum feel** — invent one (funk, 4-on-the-floor, half-time, heartbeat, wing-beat toms, clave, …). Do not default to kick 1+3 / snare 2+4 / 8th hats / tom fill every 8 bars.
+- **Lead** — one identity per song (pulse, flute, organ, mallet, brass horn, FM electric piano, …). Not the same pulse+dotted-8th stack as Gator unless that *is* the cue.
+- **Bass figure** — write a new 8th/quarter/half pattern. Do not reuse `[0, 0, 12, 0, 0, 7, 12, 0]`.
+- **Space** — dry, a short hall / multi-tap (irregular milliseconds, not on the beat), or a rhythmic delay that is clearly mix glue (16th / 8th / quarter / half). A long off-grid delay reads as a second melody drifting out of sync — don't.
+- **Form** — named sections with different instrumentation, not intro/vamp/a/b/break/a2/b2/end.
+- **Melody** — motives with holds and rests (`0` = rest). Not an 8th-note chord arpeggio for 32 slots.
+
+Power fifths, brass, and triangle counters are optional colors, not the template.
 
 ```bash
 python3 ~/make-music/src/generate_<slug>.py
@@ -70,8 +72,8 @@ Play: `~/play-ost 16bit`  (or `club`, `pool`, `bright`). `OST_VOLUME=35` to duck
 
 ## Variety checklist (use it)
 
-Stay in the 16-bit palette. Change **at least two** of: VGM progression (from the list above), tonic, tempo band (112 / 128 / 140 / 150 / 160).
+Stay 16-bit. A new progression + tonic + tempo is **not enough** if the intro and mix match an existing cue. Change the intro and at least three of: drum groove, lead waveform, bass rhythm, space (dry / delay / reverb), unique FX (bells, alarm, codec, organ, flute, harp, choir, wind, clave).
 
 ## Out of scope
 
-Do not call paid music APIs. Do not keep WAV masters. Do not add Emerald Trail or `experiments/` to the video pool.
+Do not call paid music APIs. Do not keep WAV masters. Do not add `experiments/` to the video pool.
