@@ -6,6 +6,9 @@
 #   ./play-ost club
 #   ./play-ost bright
 #   ./play-ost refresh      # rebuild pool symlinks + m3u playlists
+#   ./play-ost iron_gauntlet_2min.mp3          # one track (basename)
+#   ./play-ost iron_gauntlet                   # basename without .mp3
+#   ./play-ost ~/Music/ost/16bit/foo_2min.mp3  # absolute / relative path
 #   OST_VOLUME=35 ./play-ost 16bit
 set -euo pipefail
 
@@ -53,6 +56,33 @@ refresh_playlists() {
   ls "$ROOT/16bit"/*.mp3 "$ROOT/club"/*.mp3 2>/dev/null | wc -l | awk '{print $1 " tracks in video pool"}'
 }
 
+resolve_track() {
+  local q="$1" cand
+  # Absolute or relative path that exists
+  if [[ -f "$q" ]]; then
+    printf '%s\n' "$(readlink -f "$q")"
+    return 0
+  fi
+  # Expand ~
+  if [[ "$q" == ~* ]]; then
+    cand="${q/#\~/$HOME}"
+    if [[ -f "$cand" ]]; then
+      printf '%s\n' "$(readlink -f "$cand")"
+      return 0
+    fi
+  fi
+  # Basename search under OST
+  local base="$q"
+  [[ "$base" == *.mp3 ]] || base="${base}.mp3"
+  for cand in "$ROOT/16bit/$base" "$ROOT/club/$base" "$ROOT/bright/$base" "$ROOT/experiments/$base" "$ROOT/pool/$base"; do
+    if [[ -f "$cand" ]]; then
+      printf '%s\n' "$(readlink -f "$cand")"
+      return 0
+    fi
+  done
+  return 1
+}
+
 if [[ "$POOL" == "refresh" ]]; then
   refresh_playlists
   exit 0
@@ -64,8 +94,21 @@ case "$POOL" in
   club)   TARGETS=("$ROOT/club") ;;
   bright) TARGETS=("$ROOT/bright") ;;
   *)
-    echo "Unknown pool: $POOL" >&2
+    if TRACK="$(resolve_track "$POOL")"; then
+      exec mpv \
+        --no-video \
+        --force-window=no \
+        --loop=inf \
+        --volume="${OST_VOLUME:-45}" \
+        --audio-display=no \
+        --gapless-audio=weak \
+        --audio-client-name="ost-track" \
+        --osd-playing-msg='${filename}' \
+        "$TRACK"
+    fi
+    echo "Unknown pool or track: $POOL" >&2
     echo "Pools: pool  16bit  club  bright  refresh" >&2
+    echo "Or pass a track: iron_gauntlet_2min.mp3  |  iron_gauntlet_2min  |  /path/to/file.mp3" >&2
     exit 1
     ;;
 esac
