@@ -385,7 +385,8 @@ impl Engine {
                 // Long notes (more than one step) sound exactly as long as they are in the grid.
                 let blocks = lane.lens[step] as f64;
                 let gate = (blocks > 1.0).then_some(blocks * len);
-                self.trigger(t.sample, Some(i), t.volume * accent, t.pitch + t.fx.fine / 100.0, t.pan, t.fx.reverse, gate);
+                let note = lane.notes.get(step).copied().unwrap_or(0).clamp(-24, 24) as f32;
+                self.trigger(t.sample, Some(i), t.volume * accent, (t.pitch + note).clamp(-24.0, 24.0) + t.fx.fine / 100.0, t.pan, t.fx.reverse, gate);
                 self.shared.levels[i].store(accent.to_bits(), Ordering::Relaxed);
             }
         }
