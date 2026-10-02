@@ -24,8 +24,12 @@ pub struct Lane {
     pub lens: Vec<u8>,
     /// Pitch offset in semitones per step, on top of the track pitch. Only read where a note starts;
     /// 0 everywhere is exactly the old behaviour. Old files without this field load as all zeros.
-    #[serde(default)]
+    #[serde(default = "default_notes")]
     pub notes: Vec<i8>,
+}
+
+fn default_notes() -> Vec<i8> {
+    vec![0; MAX_STEPS]
 }
 
 impl Default for Lane {
@@ -447,5 +451,94 @@ impl Song {
 
     pub fn any_solo(&self) -> bool {
         self.tracks.iter().any(|t| t.solo)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+
+    fn lane_with(cells: &[(usize, i8)]) -> Lane {
+        let mut lane = Lane::default();
+        for &(s, note) in cells {
+            lane.place(s, Cell::On, 1, 16);
+            lane.notes[s] = note;
+        }
+        lane
+    }
+
+    #[test]
+    fn notes_roundtrip_through_json() {
+        let mut lane = lane_with(&[(0, -7), (4, 12)]);
+        let json = serde_json::to_string(&lane).unwrap();
+        assert!(json.contains("\"notes\""));
+        let back: Lane = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.notes[0], -7);
+        assert_eq!(back.notes[4], 12);
+        assert_eq!(back.notes[1], 0);
+    }
+
+    #[test]
+    fn old_files_without_notes_load_as_zero() {
+        // A 1.2.1-era lane carried only cells and lens.
+        let old = r#"{"cells":["On","Off"],"lens":[1,1]}"#;
+        let lane: Lane = serde_json::from_str(old).unwrap();
+        assert_eq!(lane.notes, vec![0; MAX_STEPS]);
+    }
+
+    #[test]
+    fn sanitize_clamps_note_offsets() {
+        let mut lane = lane_with(&[(0, 99), (2, -99)]);
+        lane.sanitize();
+        assert_eq!(lane.notes[0], 24);
+        assert_eq!(lane.notes[2], -24);
+    }
+
+    #[test]
+    fn clear_resets_notes() {
+        let mut lane = lane_with(&[(0, 5)]);
+        lane.clear();
+        assert!(lane.notes.iter().all(|&n| n == 0));
+    }
+
+    fn song_with_chain(next: &[Option<usize>]) -> Song {
+        let sample = Arc::new(crate::sound::Sample {
+            name: "x".into(),
+            pack: "classic".into(),
+            id: "x".into(),
+            kind: crate::sound::Kind::Drum,
+            data: vec![0.0; 8],
+            rate: 44_100,
+        });
+        let mut song = Song::blank(&[sample]);
+        song.queued_chain = Some(next.iter().map(|&n| ChainLink { next: n }).collect());
+        song
+    }
+
+    #[test]
+    fn song_without_chain_field_still_loads() {
+        let old = r#"{"bpm":120.0,"swing":0.0,"master":0.8,"steps":[16,16,16,16,16,16,16,16],"current":0,"queued":null,"tracks":[]}"#;
+        let song: Song = serde_json::from_str(old).unwrap();
+        assert!(song.queued_chain.is_none());
+    }
+
+    #[test]
+    fn sanitize_clamps_the_chain() {
+        let mut song = song_with_chain(&[Some(20), None, None, None, None, None, None, None, Some(1), Some(2)]);
+        let samples = vec![Arc::new(crate::sound::Sample {
+            name: "x".into(),
+            pack: "classic".into(),
+            id: "x".into(),
+            kind: crate::sound::Kind::Drum,
+            data: vec![0.0; 8],
+            rate: 44_100,
+        })];
+        song.sanitize(&["x".into()], &samples);
+        let chain = song.queued_chain.unwrap();
+        // Truncated to one link per pattern, out-of-range targets clamped.
+        assert_eq!(chain.len(), PATTERNS);
+        assert_eq!(chain[0].next, Some(PATTERNS - 1));
+        assert_eq!(chain[7].next, None);
     }
 }
