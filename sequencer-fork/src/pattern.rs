@@ -250,6 +250,10 @@ pub struct Song {
     pub current: usize,
     /// Switches to this pattern at the end of the current one.
     pub queued: Option<usize>,
+    /// Per-pattern successor: the song form. `queued` (and the UI) still override it;
+    /// when both are unset the pattern loops. Old files without the field just loop.
+    #[serde(default)]
+    pub queued_chain: Option<Vec<ChainLink>>,
     pub tracks: Vec<Track>,
 }
 
@@ -262,6 +266,7 @@ impl Song {
             steps: vec![steps; PATTERNS],
             current: 0,
             queued: None,
+            queued_chain: None,
             tracks,
         }
     }
@@ -424,6 +429,17 @@ impl Song {
         }
         self.current = self.current.min(PATTERNS - 1);
         self.queued = None;
+        match &mut self.queued_chain {
+            Some(chain) => {
+                chain.resize(PATTERNS, ChainLink::default());
+                for link in chain.iter_mut() {
+                    if let Some(n) = link.next {
+                        link.next = Some(n.min(PATTERNS - 1));
+                    }
+                }
+            }
+            None => {}
+        }
         self.bpm = self.bpm.clamp(40.0, 300.0);
         self.swing = self.swing.clamp(0.0, 0.5);
         self.master = self.master.clamp(0.0, 1.0);

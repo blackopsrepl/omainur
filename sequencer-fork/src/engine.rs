@@ -367,9 +367,15 @@ impl Engine {
     fn step(&mut self, song: &Song) {
         if self.next_step >= song.steps[self.active].max(1) {
             self.next_step = 0;
+            // The UI's queued choice wins; otherwise the song form drives.
             if let Some(q) = song.queued {
                 self.active = q;
                 self.shared.active.store(q, Ordering::Relaxed);
+            } else if let Some(link) = song.queued_chain.as_ref().and_then(|c| c.get(self.active)) {
+                if let Some(q) = link.next {
+                    self.active = q.min(crate::pattern::PATTERNS - 1);
+                    self.shared.active.store(self.active, Ordering::Relaxed);
+                }
             }
         }
         let step = self.next_step.min(song.steps[self.active].max(1) - 1);
