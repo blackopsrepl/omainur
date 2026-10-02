@@ -624,6 +624,15 @@ impl App {
                 let queued = self.song.queued == Some(p);
                 let (rect, resp) = ui.allocate_exact_size(Vec2::splat(CONTROL_H), Sense::click());
                 let painter = ui.painter();
+                // The song form: a thin arrow wherever the chain plays on to the next pattern.
+                if self.song.queued_chain.as_ref().and_then(|c| c.get(p)).and_then(|l| l.next).is_some() {
+                    let y = rect.center().y;
+                    let (x0, x1) = (rect.right() + 1.0, rect.right() + 5.0);
+                    let stroke = Stroke::new(1.0, th.fg_dim);
+                    painter.line_segment([Pos2::new(x0, y), Pos2::new(x1, y)], stroke);
+                    painter.line_segment([Pos2::new(x1, y), Pos2::new(x1 - 2.5, y - 2.5)], stroke);
+                    painter.line_segment([Pos2::new(x1, y), Pos2::new(x1 - 2.5, y + 2.5)], stroke);
+                }
                 let fill = if current { th.accent } else if resp.hovered() { th.selection } else { th.bg_light };
                 painter.rect_filled(rect, CornerRadius::ZERO, fill);
                 if queued && blink {
