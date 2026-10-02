@@ -228,13 +228,20 @@ def main() -> None:
         write_wav(os.path.join(outdir, f"{name}.wav"), data)
 
     # Anchors: the exact MIDI note each role's sample is rendered at.
-    # File names MUST equal the generator's TRACKS sample names; these MUST
-    # match the generator's track anchors (60 lead, 36 bass, 48 stab/pad, 72 arp).
-    write_wav(os.path.join(outdir, "rhodes_tone.wav"), render_pulse(60, 0.4))
-    write_wav(os.path.join(outdir, "bass_hit.wav"), render_tri_bass(36, 0.6))
-    write_wav(os.path.join(outdir, "rhodes_chord.wav"), render_rhodes(48, 1.2))
-    write_wav(os.path.join(outdir, "neon_pad.wav"), render_rhodes(48, 2.0))
-    write_wav(os.path.join(outdir, "plucks.wav"), render_pluck(72, 0.3))
+    # File names MUST equal the generator's sample names. The "omainur_" prefix
+    # is the namespace: the app keys user samples on the FILE STEM (directories
+    # are stripped), so only a unique file name keeps these from being shadowed
+    # by the built-in sounds, which the app resolves FIRST. Anchors:
+    # lead 60, bass 36, stab/pad 48, arp 72.
+    for base, (render, arg) in {
+        "rhodes_tone": (render_pulse, 60),
+        "bass_hit": (render_tri_bass, 36),
+        "rhodes_chord": (render_rhodes, 48),
+        "neon_pad": (render_rhodes, 48),
+        "plucks": (render_pluck, 72),
+    }.items():
+        wav = render(arg, {"rhodes_tone": 0.4, "bass_hit": 0.6, "rhodes_chord": 1.2, "neon_pad": 2.0, "plucks": 0.3}[base])
+        write_wav(os.path.join(outdir, f"omainur_{base}.wav"), wav)
     print(f"anchors written to {outdir}/")
 
 

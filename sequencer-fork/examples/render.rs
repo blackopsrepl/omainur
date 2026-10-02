@@ -27,17 +27,30 @@ fn guess_kind(name: &str) -> Kind {
 }
 
 fn load_dir(dir: &str) -> Vec<Arc<Sample>> {
-    let mut paths: Vec<_> = std::fs::read_dir(dir)
-        .unwrap_or_else(|e| panic!("no wav dir {dir}: {e}"))
-        .flatten()
-        .map(|e| e.path())
-        .filter(|p| p.extension().is_some_and(|e| e.eq_ignore_ascii_case("wav")))
-        .collect();
-    paths.sort();
-    paths
+    if !std::path::Path::new(dir).exists() {
+        panic!("no wav dir {dir}");
+    }
+    // Walk recursively: packs may namespace their samples into subdirectories.
+    let mut paths: Vec<_> = vec![std::path::PathBuf::from(dir)];
+    let mut wavs = Vec::new();
+    while let Some(dir) = paths.pop() {
+        for entry in std::fs::read_dir(&dir).expect("read_dir").flatten() {
+            let p = entry.path();
+            if p.is_dir() {
+                paths.push(p);
+            } else if p.extension().is_some_and(|e| e.eq_ignore_ascii_case("wav")) {
+                wavs.push(p);
+            }
+        }
+    }
+    wavs.sort();
+    wavs
         .iter()
         .filter_map(|p| {
-            let stem = p.file_stem()?.to_string_lossy().to_lowercase();
+            // The id is the path relative to the wav dir (subdirs included), lowercased
+            // with separators as underscores, matching how ids travel in song files.
+            let rel = p.strip_prefix(dir).unwrap_or(p).to_string_lossy().to_lowercase();
+            let stem = rel.trim_end_matches(".wav").replace('/', "_");
             let f = File::open(p).ok()?;
             decode(&stem, guess_kind(&stem), "omainur", BufReader::new(f))
         })

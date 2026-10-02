@@ -188,11 +188,15 @@ GENRES = {
 
 # ---------------------------------------------------------------- compiler
 
-# (name, role). role decides groove/notes/mix. All names exist in the app's built-ins.
+# (name, role). role decides groove/notes/mix. The "omainur_" prefix is the
+# instrument-pack namespace: the anchors ship as files of the same stem (see
+# instruments/make_anchors.py) and the app resolves sample ids by name, so the
+# prefixed ids bind generated songs to the tuned pack instead of the built-ins.
 TRACKS = [
-    ("kick", "kick"), ("snare", "snare"), ("clap", "clap"), ("hat_closed", "hat"),
-    ("hat_open", "hat_open"), ("bass_hit", "bass"), ("rhodes_chord", "stab"),
-    ("rhodes_tone", "lead"), ("plucks", "arp"), ("neon_pad", "pad"),
+    ("omainur_kick", "kick"), ("omainur_snare", "snare"), ("omainur_clap", "clap"),
+    ("omainur_hat_closed", "hat"), ("omainur_hat_open", "hat_open"),
+    ("omainur_bass_hit", "bass"), ("omainur_rhodes_chord", "stab"),
+    ("omainur_rhodes_tone", "lead"), ("omainur_plucks", "arp"), ("omainur_neon_pad", "pad"),
 ]
 
 # Pattern chain A..H: content type per slot, and which progression it uses.
@@ -426,12 +430,12 @@ def generate(genre_name: str, seed: int) -> dict:
 # ---------------------------------------------------------------- validation
 
 # Where the compiler folds each pitched track's octave; must match fill_* code.
-def track_anchor(name: str, genre: dict) -> int:
-    if name == "rhodes_tone":
+def track_anchor(base: str, genre: dict) -> int:
+    if base == "rhodes_tone":
         return genre["lead"]["anchor"]
-    if name == "plucks":
+    if base == "plucks":
         return 72
-    if name in ("rhodes_chord", "neon_pad"):
+    if base in ("rhodes_chord", "neon_pad"):
         return 48
     return genre["bass_anchor"]
 
@@ -456,9 +460,10 @@ def validate(s: dict, genre_name: str) -> list[str]:
                     if lane["cells"][step] == "Off" or lane["notes"][step] == 0:
                         continue
                     name = names[tr["sample"]] if isinstance(tr["sample"], int) else tr["sample"]
-                    if name in ("kick", "snare", "clap", "hat_closed", "hat_open"):
+                    base = name.removeprefix("omainur_")
+                    if base in ("kick", "snare", "clap", "hat_closed", "hat_open"):
                         continue
-                    m = track_anchor(name, genre) + lane["notes"][step]
+                    m = track_anchor(base, genre) + lane["notes"][step]
                     if m % 12 not in chord and m % 12 not in scale_pcs:
                         errors.append(f"out-of-key {name} pat{pat} bar{bar} step{step}: midi {m}")
         if len(errors) > 30:
