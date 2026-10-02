@@ -7,6 +7,8 @@ the ontology of [make-16bit-music](https://github.com/timsonner/make-16bit-music
 same seed + genre → same song file, and every pitched note is provably a chord
 tone or a scale tone. No ML — rules and tables.
 
+**Start with the [user manual](../MANUAL.md)** — build, install, generate, play, edit.
+
 Layout:
 
 ```
