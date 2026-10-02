@@ -219,11 +219,11 @@ def main() -> None:
     os.makedirs(outdir, exist_ok=True)
 
     for name, data in {
-        "kick": render_kick(),
-        "snare": render_snare(),
-        "hat_closed": render_hat(True),
-        "hat_open": render_hat(False),
-        "clap": render_clap(),
+        "omainur_kick": render_kick(),
+        "omainur_snare": render_snare(),
+        "omainur_hat_closed": render_hat(True),
+        "omainur_hat_open": render_hat(False),
+        "omainur_clap": render_clap(),
     }.items():
         write_wav(os.path.join(outdir, f"{name}.wav"), data)
 
