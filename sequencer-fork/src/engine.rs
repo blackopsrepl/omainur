@@ -367,15 +367,9 @@ impl Engine {
     fn step(&mut self, song: &Song) {
         if self.next_step >= song.steps[self.active].max(1) {
             self.next_step = 0;
-            // The UI's queued choice wins; otherwise the song form drives.
             if let Some(q) = song.queued {
                 self.active = q;
                 self.shared.active.store(q, Ordering::Relaxed);
-            } else if let Some(link) = song.queued_chain.as_ref().and_then(|c| c.get(self.active)) {
-                if let Some(q) = link.next {
-                    self.active = q.min(crate::pattern::PATTERNS - 1);
-                    self.shared.active.store(self.active, Ordering::Relaxed);
-                }
             }
         }
         let step = self.next_step.min(song.steps[self.active].max(1) - 1);
@@ -391,8 +385,7 @@ impl Engine {
                 // Long notes (more than one step) sound exactly as long as they are in the grid.
                 let blocks = lane.lens[step] as f64;
                 let gate = (blocks > 1.0).then_some(blocks * len);
-                let note = lane.notes.get(step).copied().unwrap_or(0).clamp(-24, 24) as f32;
-                self.trigger(t.sample, Some(i), t.volume * accent, (t.pitch + note).clamp(-24.0, 24.0) + t.fx.fine / 100.0, t.pan, t.fx.reverse, gate);
+                self.trigger(t.sample, Some(i), t.volume * accent, t.pitch + t.fx.fine / 100.0, t.pan, t.fx.reverse, gate);
                 self.shared.levels[i].store(accent.to_bits(), Ordering::Relaxed);
             }
         }

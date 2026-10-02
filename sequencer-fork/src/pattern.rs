@@ -22,15 +22,11 @@ pub struct Lane {
     pub cells: Vec<Cell>,
     /// Length in steps of the note starting at this step. 1 = one-shot, longer = cut off after that many steps.
     pub lens: Vec<u8>,
-    /// Pitch offset in semitones per step, on top of the track pitch. Only read where a note starts;
-    /// 0 everywhere is exactly the old behaviour. Old files without this field load as all zeros.
-    #[serde(default)]
-    pub notes: Vec<i8>,
 }
 
 impl Default for Lane {
     fn default() -> Self {
-        Self { cells: vec![Cell::Off; MAX_STEPS], lens: vec![1; MAX_STEPS], notes: vec![0; MAX_STEPS] }
+        Self { cells: vec![Cell::Off; MAX_STEPS], lens: vec![1; MAX_STEPS] }
     }
 }
 
@@ -71,18 +67,13 @@ impl Lane {
     pub fn clear(&mut self) {
         self.cells.fill(Cell::Off);
         self.lens.fill(1);
-        self.notes.fill(0);
     }
 
     fn sanitize(&mut self) {
         self.cells.resize(MAX_STEPS, Cell::Off);
         self.lens.resize(MAX_STEPS, 1);
-        self.notes.resize(MAX_STEPS, 0);
         for l in &mut self.lens {
             *l = (*l).clamp(1, 16);
-        }
-        for n in &mut self.notes {
-            *n = (*n).clamp(-24, 24);
         }
     }
 }
@@ -233,12 +224,6 @@ impl Track {
     }
 }
 
-/// One entry of the song form: which pattern follows this one, if any.
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub struct ChainLink {
-    pub next: Option<usize>,
-}
-
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Song {
     pub bpm: f32,
@@ -250,10 +235,6 @@ pub struct Song {
     pub current: usize,
     /// Switches to this pattern at the end of the current one.
     pub queued: Option<usize>,
-    /// Per-pattern successor: the song form. `queued` (and the UI) still override it;
-    /// when both are unset the pattern loops. Old files without the field just loop.
-    #[serde(default)]
-    pub queued_chain: Option<Vec<crate::pattern::ChainLink>>,
     pub tracks: Vec<Track>,
 }
 
@@ -266,7 +247,6 @@ impl Song {
             steps: vec![steps; PATTERNS],
             current: 0,
             queued: None,
-            queued_chain: None,
             tracks,
         }
     }
@@ -429,17 +409,6 @@ impl Song {
         }
         self.current = self.current.min(PATTERNS - 1);
         self.queued = None;
-        match &mut self.queued_chain {
-            Some(chain) => {
-                chain.resize(PATTERNS, ChainLink::default());
-                for link in chain.iter_mut() {
-                    if let Some(n) = link.next {
-                        link.next = Some(n.min(PATTERNS - 1));
-                    }
-                }
-            }
-            None => {}
-        }
         self.bpm = self.bpm.clamp(40.0, 300.0);
         self.swing = self.swing.clamp(0.0, 0.5);
         self.master = self.master.clamp(0.0, 1.0);
