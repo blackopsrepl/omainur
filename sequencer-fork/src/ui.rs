@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 use eframe::egui::{self, Align2, Color32, CornerRadius, FontFamily, FontId, Pos2, Rect, Sense, Stroke, StrokeKind, Vec2};
 
 use crate::audio::{self, Output, Recorder, Shared};
-use crate::pattern::{Cell, FilterKind, Fx, MAX_STEPS, MAX_TRACKS, PATTERNS, Song, Track};
+use crate::pattern::{note_at_impl, Cell, FilterKind, Fx, MAX_STEPS, MAX_TRACKS, PATTERNS, Song, Track};
 use crate::samples::{self, Kind, Sample};
 use crate::community;
 use crate::packs;
@@ -122,6 +122,8 @@ pub struct App {
     watcher: theme::Watcher,
     paint: Option<Cell>,
     wheel: f32,
+    /// Per-note pitch mode: transpose notes with ↑/↓ while held, any octave with Ctrl.
+    pitch_mode: bool,
     meters: [f32; MAX_TRACKS],
     selected: usize,
     view_h: f32,
@@ -192,6 +194,7 @@ impl App {
             watcher: theme::Watcher::new(),
             paint: None,
             wheel: 0.0,
+            pitch_mode: false,
             meters: [0.0; MAX_TRACKS],
             selected: 0,
             view_h: 600.0,
@@ -512,11 +515,38 @@ impl App {
         if pressed(ArrowRight) {
             self.set_steps(self.song.steps() + 1);
         }
-        if pressed(ArrowUp) {
-            self.song.bpm = (self.song.bpm + 1.0).min(300.0);
+        if self.pitch_mode {
+            // P mode: ↑/↓ transpose the notes of the current pattern; Ctrl steps by octave.
+            let semitones = |up: bool| {
+                let mut n = if up { 1 } else { -1 };
+                if ctrl {
+                    n *= 12;
+                }
+                n
+            };
+            if pressed(ArrowUp) || pressed(ArrowDown) {
+                let delta = semitones(pressed(ArrowUp));
+                let steps = self.song.steps();
+                for t in &mut self.song.tracks {
+                    let lane = &mut t.lanes[self.song.current];
+                    for s in 0..steps {
+                        if lane.cells[s] != Cell::Off {
+                            lane.notes[s] = (lane.notes[s] + delta).clamp(-24, 24);
+                        }
+                    }
+                }
+            }
+        } else {
+            if pressed(ArrowUp) {
+                self.song.bpm = (self.song.bpm + 1.0).min(300.0);
+            }
+            if pressed(ArrowDown) {
+                self.song.bpm = (self.song.bpm - 1.0).max(40.0);
+            }
         }
-        if pressed(ArrowDown) {
-            self.song.bpm = (self.song.bpm - 1.0).max(40.0);
+        if pressed(P) {
+            self.pitch_mode = !self.pitch_mode;
+            self.say(if self.pitch_mode { "pitch mode: ↑/↓ transpose, ctrl+↑/↓ by octave" } else { "pitch mode off" });
         }
         if ctrl && pressed(S) {
             self.save_now();
@@ -902,13 +932,21 @@ impl App {
         if resp.hovered() {
             if let Some(pos) = pointer.hover_pos() {
                 let s = hit(pos);
-                if self.song.tracks[ti].lanes[cur].note_at(s).is_some() {
+                if let Some(n) = note_at_impl(&self.song.tracks[ti].lanes[cur].cells, &self.song.tracks[ti].lanes[cur].lens, s) {
                     let dy = ui.input_mut(|i| std::mem::take(&mut i.smooth_scroll_delta.y));
                     self.wheel += dy;
                     let notches = (self.wheel / 30.0).trunc();
                     if notches != 0.0 {
                         self.wheel -= notches * 30.0;
-                        self.song.tracks[ti].lanes[cur].resize(s, notches as i32, steps);
+                        if self.pitch_mode {
+                            // Pitch mode: scroll transposes just this note (shift: by octave).
+                            let step = if ui.input(|i| i.modifiers.shift) { 12 } else { 1 };
+                            let delta = ((notches as i32) * step).clamp(-24, 24) as i8;
+                            let note = &mut self.song.tracks[ti].lanes[cur].notes[n];
+                            *note = (*note + delta).clamp(-24, 24);
+                        } else {
+                            self.song.tracks[ti].lanes[cur].resize(s, notches as i32, steps);
+                        }
                     }
                 }
             }
@@ -994,6 +1032,11 @@ impl App {
             }
             if len > 1 && cell_w >= 18.0 {
                 p.text(bar.left_top() + Vec2::new(4.0, 5.0), Align2::LEFT_TOP, format!("{len}"), FontId::monospace(10.0), th.on(c));
+            }
+            // The note's pitch, once it has one or while pitch mode is on.
+            if cell_w >= 18.0 && (lane.notes[n] != 0 || self.pitch_mode) {
+                let v = lane.notes[n];
+                p.text(bar.right_top() + Vec2::new(-4.0, 5.0), Align2::RIGHT_TOP, format!("{v:+}"), FontId::monospace(10.0), th.on(c));
             }
         }
         if let Some(bar) = hover_note {

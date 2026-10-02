@@ -41,7 +41,7 @@ impl Default for Lane {
 impl Lane {
     /// The start step of the note covering step `s`, if any.
     pub fn note_at(&self, s: usize) -> Option<usize> {
-        (0..=s).rev().find(|&n| self.cells[n] != Cell::Off && n + self.lens[n] as usize > s)
+        note_at_impl(&self.cells, &self.lens, s)
     }
 
     /// How many steps are free from `s` until the next note or the end of the grid.
@@ -59,9 +59,10 @@ impl Lane {
     }
 
     pub fn erase(&mut self, s: usize) {
-        if let Some(n) = self.note_at(s) {
+        if let Some(n) = note_at_impl(&self.cells, &self.lens, s) {
             self.cells[n] = Cell::Off;
             self.lens[n] = 1;
+            self.notes[n] = 0;
         }
     }
 
@@ -98,6 +99,12 @@ pub enum FilterKind {
     Low,
     High,
     Band,
+}
+
+/// The start step of the note covering step `s`, shared with the UI, which
+/// shows and edits pitches on borrowed lanes it cannot call methods on.
+pub fn note_at_impl(cells: &[Cell], lens: &[u8], s: usize) -> Option<usize> {
+    (0..=s).rev().find(|&n| cells[n] != Cell::Off && n + lens[n] as usize > s)
 }
 
 /// Effects on one track, applied to everything the track plays before it goes to the mix.
