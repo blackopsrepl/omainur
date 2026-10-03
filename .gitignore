@@ -1,3 +1,4 @@
 target/
 omarchy-sequencer/
 make-16bit-music/
+__pycache__/
