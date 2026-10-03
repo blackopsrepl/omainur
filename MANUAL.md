@@ -84,9 +84,8 @@ The output is one JSON file containing the full arrangement — 8 patterns (A to
 H: intro, themes, tension, break, reprise) chained into a form, with harmony
 that modulates between the two progressions.
 
-Reference renders from the study (16-bit voices, real engine) are in
-`/tmp/omainur_*.wav` if you still have them from the session that built this;
-regenerate any time with the render command in section 7.
+Reference renders for every genre are reproducible at any time with the render
+command in section 7.
 
 ## 4. Open a generated song in the app
 

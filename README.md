@@ -53,18 +53,25 @@ cd ../generator && python3 omainur_gen.py 16bit 1 my_song.json  # house jungle s
 # ~/.local/share/omarchy-sequencer/samples/ first)
 ```
 
-## What the real build still needs (none of it spikes-risky)
+## What is still open
 
-1. **UI for `notes[]`** — paint + a transpose gesture; `lens[]` already shows
-   the pattern to copy (scroll-over-note = transpose).
-2. **Chain UI (optional)** — a form row over the pattern letters; the engine
-   already plays it, and the site player gets it for free.
-3. **Pack packaging** — anchor WAVs as a proper pack + CATALOG entry.
-4. **Genre table growth** — intro-signature recipes (the skill's most
+1. **Pack packaging** — anchor WAVs as a proper pack + CATALOG entry, so
+   generated songs share correctly instead of depending on the user-sample
+   folder.
+2. **Genre table growth** — intro-signature recipes (the make-music skill's most
    opinionated rule), more lanes, second lead/bass voices.
-5. **Determinism hardening** — engine noise (accents are data; hat humanization
+3. **Determinism hardening** — engine noise (accents are data; hat humanization
    if ever added should become seeded data too).
-6. **Validator in CI** — a genre that emits one out-of-key note fails the build.
+4. **Validator in CI** — a genre that emits one out-of-key note fails the build.
 
-Design alternatives kept for future approaches: see the vault note
-`projects/omainur.md` in `/srv/org`.
+## Design alternatives not taken
+
+- **Zero-kernel generator** — emit songs inside the stock schema only: drums
+  and one pitch per track, harmony carried by chord roots. Runs on the
+  unmodified app and shares as-is; gives up melodies.
+- **External render pipeline** — keep make-16bit-music as the renderer and use
+  the sequencer only as an editing surface. Gives up in-app editability of
+  generated songs.
+- **Upstream-first** — PR the two additive fields to the app and keep the
+  generator and pack local. Best endgame if the app picks them up; the fork
+  exists until then.

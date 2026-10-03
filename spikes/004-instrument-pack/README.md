@@ -37,7 +37,8 @@ The pipeline works and the engine-side is a pure data drop. The scope note:
 "does it SOUND 16-bit" is an ear judgment — the synthesis code is the
 make-16bit-music code verbatim and the crunch/FX chain is engaged, but a
 human listen (Vittorio) is the real acceptance test for the default lane's
-feel. Renders: `/tmp/omainur_{16bit,house,jungle,shrine68}.wav`.
+feel. Renders: regenerate per genre with the render harness (see the user
+manual, section 7).
 
 ### Recommendation for the real build
 - Ship as a proper pack (pack dir + CATALOG entry), not user samples, so
