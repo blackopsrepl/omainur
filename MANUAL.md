@@ -36,7 +36,7 @@ cp target/release/omarchy-sequencer ~/.local/bin/
 ```
 
 For everything the app itself can do (themes, sharing, recording, packs), read
-the upstream README: `omarchy-sequencer/README.md` in this repo. This manual
+the app's own README: `sequencer-fork/README.md` in this repo. This manual
 covers operating it with omainur.
 
 ## 2. Install the instrument pack

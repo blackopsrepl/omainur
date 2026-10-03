@@ -28,9 +28,8 @@ series.
 |---|---|
 | `omainur/generator/` | the ontology as code: `omainur_gen.py` (theory core, genre table, compiler, self-validator) + reference songs |
 | `omainur/instruments/` | `make_anchors.py` — the synth voices as anchor WAVs (run it to fill `samples/`) |
-| `sequencer-fork/` | omarchy-sequencer 1.2.1 + per-note pitch + song-form chain |
-| `spikes/` | the four feasibility studies (`main` holds the pre-implementation snapshot) |
-| `omarchy-sequencer/`, `make-16bit-music/` | pristine upstream clones, read-only references |
+| `sequencer-fork/` | the fork *is* the app: omarchy-sequencer 1.2.1 + per-note pitch + song-form chain, with `install.sh`, packaging and upstream docs. The pristine upstream clones used while studying it (`omarchy-sequencer/`, `make-16bit-music/`) are not tracked |
+| `spikes/` | the four feasibility studies; `main` and the implementation series stay reachable on the `dev-history` tag |
 
 ## The two kernel changes
 
