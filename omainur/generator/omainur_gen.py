@@ -132,6 +132,24 @@ GENRES = {
                 "bass": {"drive": 0.15},
                 "hat": {"filter": "High", "cutoff": 0.45}},
     },
+    # castle lane: Castlevania-style gothic chase — harmonic-minor modal rock
+    # (i–VI–VII / i–iv–VI–V with a true V7), octave-gallop bass, organ stabs.
+    "castle": {
+        "bpm": 140.0, "swing": 0.0, "steps": 16,
+        "root": "e", "scale": "harmonic_min",
+        "prog": [P(0, True), P(5, True), P(6, True), P(0, True)],          # Em C D Em
+        "prog_b": [P(0, True), P(3, True), P(5, True), P(4, True, "harmonic_min")],  # Em Am C B7
+        "sections": {"A": "basic", "B": "theme", "C": "full", "D": "tension"},
+        "groove": {"kick": [0, 8], "snare": [4, 12],
+                   "hat": [0, 2, 4, 6, 8, 10, 12, 14]},
+        "bass_fig": [(0, 0), (2, 12), (4, 0), (6, 12), (8, 0), (10, 12), (12, 0), (14, 12)],
+        "lead": {"lo": 59, "hi": 80, "anchor": 64},
+        "bass_range": (28, 43), "bass_anchor": 33,
+        "stab": [(0, 4), (6, 2), (8, 4), (14, 2)],
+        "mix": {"lead": {"crush": 0.45, "reverb": 0.4, "delay_steps": 3, "feedback": 0.35, "send": 0.4},
+                "bass": {"filter": "Low", "cutoff": 0.5},
+                "stab": {"reverb": 0.55}, "arp": {"reverb": 0.35, "send": 0.3}},
+    },
     # club lane: 4-on-the-floor dark house.
     "house": {
         "bpm": 124.0, "swing": 0.06, "steps": 16,
@@ -407,12 +425,28 @@ def generate(genre_name: str, seed: int) -> dict:
 
     apply_fx(genre, roles, tracks)
 
+    # The hook carrier owns the lead: one designed motif carried across the
+    # form (recurrence + answer + return; spikes 005-009). fill_harmony's
+    # lead lane is overwritten; its stabs/arps/pads remain as support.
+    try:
+        import sys as _sys
+        from pathlib import Path as _Path
+        _here = _Path(__file__).resolve().parent
+        if str(_here) not in _sys.path:
+            _sys.path.insert(0, str(_here))
+        import hook_form
+        hook_form.carry_hook({"song": {"tracks": tracks}, "names": names}, genre_name, seed)
+    except ImportError:
+        pass  # hook_form absent: the legacy per-section lead stands
+
     # The song form: A(intro) B C D | E(tension) F G(break) H, then loop back to B.
     chain = []
     for i in range(8):
         nxt = (i + 1) % 8 if i < 7 else 1
         chain.append({"next": nxt})
-    steps = [genre["steps"]] * 8
+    # A pattern holds its own 4-bar progression; the chain advances at the
+    # 4-bar wrap. genre["steps"] is the per-bar 4/4 grid.
+    steps = [genre["steps"] * 4] * 8
 
     return {
         "format": "omarchy-sequencer-song", "version": 1, "genre": genre_name,
