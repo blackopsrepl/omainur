@@ -19,18 +19,28 @@ to frequencies and phase increments; composition choices remain in the cue.
 
 ## Setup
 
-The music-generation source is not vendored here. Clone Tim's upstream
-repository into the ignored `make-16bit-music/` directory:
-
-```bash
-git clone https://github.com/timsonner/make-16bit-music.git make-16bit-music
-```
+The Python music-generation source is vendored in `make-16bit-music/`; no
+external clone is needed. The imported history retains the upstream lineage
+and the Escalade rhythm work.
 
 ## Generate
 
 ```bash
-cd make-16bit-music && python3 src/generate_castlevania.py
+cd make-16bit-music && python3 src/generate_escalade.py
 ```
+
+An integer seed makes the run deterministic. For exact replay, pass all seven
+seeds printed by an entropy-backed run:
+
+```bash
+cd make-16bit-music && python3 src/generate_escalade.py 73
+```
+
+```bash
+cd make-16bit-music && python3 src/generate_escalade.py --repro 1,2,3,4,5,6,7
+```
+
+Run the generator tests with `cd make-16bit-music/src && python3 -m unittest discover -v`.
 
 A new cue is a new file: read the skill before writing a note
 (`make-16bit-music/skills/make-music/SKILL.md`). Steal methods, not mixes.
