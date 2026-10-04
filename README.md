@@ -77,3 +77,27 @@ List the folders — the disk is the catalog.
 | `generate_dark_house.py` | `chrome_cellar_2min.mp3` | club |
 | `generate_jungle.py` | `black_satellite_2min.mp3` | experiments |
 | `generate_kitsune.py` | `kitsune_gate_2min.mp3` | experiments |
+| `generate_escalade.py` | `escalade_2min.mp3` | 16bit |
+
+## Escalade
+
+`src/generate_escalade.py` renders a 2:00, 132 BPM castle cue to
+`~/Music/ost/16bit/escalade_2min.mp3` (or under `OST_DIR`). It deals a fixed
+seven-layer arrangement—kick, snare, hats, bass, comp, lead, counter—from
+bounded pattern and harmony choices.
+
+```bash
+python3 src/generate_escalade.py          # entropy-backed take; prints its seeds
+python3 src/generate_escalade.py 73       # deterministic take from one seed
+python3 src/generate_escalade.py --repro 1,2,3,4,5,6,7
+```
+
+For exact replay, pass all seven logged seeds to `--repro` in this order:
+`arrangement,kick,snare,hats,bass,comp,lead`. The lead's one-bar onset mask is
+repeated within each two-bar phrase; active phrases get bounded local rhythm
+changes while keeping their first and last hits anchored. Strong drum/bass
+claims favor nearby chord tones; weak slots move by one scale step. The output
+file is replaced on each render.
+
+Run the generator tests from the repository root with
+`cd src && python3 -m unittest discover -v`.
